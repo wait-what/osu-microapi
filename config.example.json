@@ -1,0 +1,7 @@
+{
+    "bind": "0.0.0.0:6969",
+    "client_id": "123456",
+    "secret": "ghfajksdlfghsdklfjghsdkljfbhsfdghjkldsfghjkl",
+    "update_interval_minutes": 180,
+    "user_id": "123456789"
+}
