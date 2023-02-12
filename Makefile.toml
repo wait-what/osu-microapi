@@ -1,0 +1,58 @@
+# Run project for debugging
+
+[tasks.run]
+script_runner = "@shell"
+script = '''
+mold -run cargo run # shell2batch: cargo run
+'''
+
+# Build and pack releases for all supported targets
+
+[tasks.release_build_linux_gnu]
+script_runner = "@shell"
+script = '''
+mold -run cargo build --release --target x86_64-unknown-linux-gnu # shell2batch: cargo build --release --target x86_64-unknown-linux-gnu
+'''
+
+[tasks.release_build_windows]
+script_runner = "@shell"
+script = "cargo build --release --target x86_64-pc-windows-gnu"
+
+
+[tasks.release_copy_artifacts]
+script_runner = "@shell"
+script = '''
+mkdir -p release
+rm -rf release/*
+
+cp target/x86_64-unknown-linux-gnu/release/"$CARGO_MAKE_CRATE_NAME" release/"$CARGO_MAKE_CRATE_NAME"-"$CARGO_MAKE_CRATE_VERSION"-linux-gnu
+cp target/x86_64-pc-windows-gnu/release/"$CARGO_MAKE_CRATE_NAME".exe release/"$CARGO_MAKE_CRATE_NAME"-"$CARGO_MAKE_CRATE_VERSION"-windows.exe
+'''
+
+[tasks.release_upx_artifacts]
+ignore_errors = true
+script_runner = "@shell"
+script = '''
+upx --best --lzma release/"$CARGO_MAKE_CRATE_NAME"-"$CARGO_MAKE_CRATE_VERSION"-linux-gnu # release/"$CARGO_MAKE_CRATE_NAME"-"$CARGO_MAKE_CRATE_VERSION"-linux-musl
+'''
+
+[tasks.release_pack_artifacts]
+script_runner = "@shell"
+script = '''
+cd release
+
+zip -9 -r "$CARGO_MAKE_CRATE_NAME"-"$CARGO_MAKE_CRATE_VERSION".zip *
+'''
+
+[tasks.release]
+dependencies = [
+    "release_build_linux_gnu",
+    "release_build_windows",
+    "release_copy_artifacts",
+    "release_upx_artifacts",
+    "release_pack_artifacts"
+]
+script_runner = "@shell"
+script = '''
+du -sh release/* # shell2batch: dir release
+'''
