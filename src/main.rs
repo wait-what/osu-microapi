@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 use tiny_http::{Header, Method, Response, Server};
 
 mod stats;
@@ -7,11 +7,11 @@ use stats::Stats;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    bind: String,
+    bind_address: String,
     pub client_id: String,
-    pub secret: String,
+    pub client_secret: String,
     pub update_interval_minutes: u64,
-    pub user_id: String,
+    pub user_ids: Vec<String>,
 }
 
 fn main() {
@@ -22,25 +22,43 @@ fn main() {
     let mut stats = Stats::default();
     stats.update(&mut last_update, &config);
 
-    let server = Server::http(config.bind.as_str()).unwrap();
-    println!("Running osu-microapi on {}", config.bind.as_str());
+    let server = Server::http(config.bind_address.as_str()).unwrap();
+    println!("Running osu-microapi on {}", config.bind_address.as_str());
 
     for request in server.incoming_requests() {
         match request.method() {
             Method::Get => {
                 if request.url() == "/" {
-                    stats.update(&mut last_update, &config);
-
                     request
                         .respond(
-                            Response::from_string(&stats.value)
-                                .with_header(Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]).unwrap()),
+                            Response::from_string(config.user_ids.join(",")).with_header(
+                                Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..])
+                                    .unwrap(),
+                            ),
                         )
                         .unwrap();
 
                     continue;
                 }
-            },
+
+                stats.update(&mut last_update, &config);
+
+                let user_id = request.url().trim_start_matches('/').trim_end_matches('/');
+                let user = stats.users.get(user_id);
+
+                if user.is_some() {
+                    request
+                        .respond(
+                            Response::from_string(user.unwrap()).with_header(
+                                Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..])
+                                    .unwrap(),
+                            ),
+                        )
+                        .unwrap();
+
+                    continue;
+                }
+            }
             _ => {}
         }
 
