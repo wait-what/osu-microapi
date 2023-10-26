@@ -1,0 +1,125 @@
+<head>
+    <script>
+        const endpoint = 'http://localhost:6969/';
+
+        const getUsers = async () => {
+            const userIds = await (await fetch(endpoint)).text();
+            if (!userIds || !userIds.match(/^\d+(,\d+)*$/)) return Promise.reject('the api is broken');
+
+            const users = userIds.split(',').map(async id => {
+                const user = await fetch(endpoint + id)
+                return await user.json()
+            })
+
+            return Promise.allSettled(users)
+        }
+
+        getUsers()
+        .then(users => {
+            users
+            .filter(user => user.status == 'fulfilled')
+            .map(user => user.value)
+            .sort((a, b) => {
+                if (!a.statistics || !a.statistics.global_rank) return 1
+                if (!b.statistics || !b.statistics.global_rank) return -1
+
+                return a.statistics.global_rank - b.statistics.global_rank
+            })
+            .forEach((user, page_rank) => {
+                console.log(user)
+
+                const userElement = document.querySelector('#osu-user-base').cloneNode(true)
+
+                userElement.querySelector('.osu-user-username').innerHTML = user.username
+                userElement.querySelector('.osu-user-local-rank').innerHTML = `#${page_rank + 1}`
+                userElement.querySelector('.osu-user-global-rank').innerHTML = user.statistics.global_rank ? `#${user.statistics.global_rank}` : '-'
+                userElement.querySelector('.osu-user-avatar').src = user.avatar_url
+
+                userElement.style.display = 'block'
+                document.querySelector('#osu-users').appendChild(userElement)
+            })
+
+            document.querySelector('#osu-status').remove()
+        })
+        .catch(err => {
+            console.error(err)
+            document.querySelector('#osu-status').innerHTML = 'Could not load users'
+        })
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+
+        body {
+            background-color: #16181a;
+            color: #ffffff;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        #osu-users {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .osu-user-card {
+            margin: 10px;
+            padding: 10px;
+            min-width: 250px;
+
+            border-radius: 10px;
+            border: 4px solid #92a7db;
+
+            background-color: #ffffff10;
+            box-shadow: 2px 2px 10px #ffffff7a;
+
+            display: flex;
+            flex-direction: row;
+        }
+
+        img.osu-user-avatar {
+            display: flex;
+            float: left;
+
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 10px;
+        }
+
+        div.osu-user-stats {
+            margin-left: 20px;
+            margin-top: 15px;
+
+            display: flex;
+            flex-direction: column;
+        }
+
+        span.osu-user-username {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        span.osu-user-rank {
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div id="osu-users">
+        <div class="osu-user-card" id="osu-user-base" style="display: none">
+            <img class="osu-user-avatar" src="">
+
+            <div class="osu-user-stats">
+                <span class="osu-user-username"></span>
+                <span class="osu-user-local-rank"></span>
+                <span class="osu-user-global-rank"></span>
+            </div>
+        </div>
+
+        <h2 id="osu-status">Loading</h2>
+    </div>
+</body>
+
+
+</html>
