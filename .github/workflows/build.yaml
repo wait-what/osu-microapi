@@ -42,11 +42,11 @@ jobs:
           key: ${{ matrix.target.triple }}-target-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ matrix.target.triple }}-target-
 
-      - name: Install musl build dependencies
+      - name: Install musl build dependencies and openssl
         if: matrix.target.name == 'x86_64-linux-musl'
         run: |
           sudo apt-get update
-          sudo apt-get install -y musl-tools
+          sudo apt-get install -y musl-tools libssl-dev
 
       - name: Install musl target
         if: matrix.target.name == 'x86_64-linux-musl'
