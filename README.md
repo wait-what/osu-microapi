@@ -31,5 +31,9 @@ Useful if you want to have an embed with your osu stats on your website. An exam
 
 > `user_ids` is the list of users you want to expose.
 
+## API reference
+- GET `/` - comma separated list of user IDs
+- GET `/user/<id>` - JSON object with user info
+
 ## License
 This project is licensed under the [MIT license](./LICENSE)
