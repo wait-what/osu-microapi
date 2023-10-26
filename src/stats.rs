@@ -54,7 +54,7 @@ impl Stats {
 
         // Fetching stats for each configured user
         for user_id in config.user_ids.iter() {
-            let stats = Request::get(format!("https://osu.ppy.sh/api/v2/users/{}", user_id))
+            let stats = Request::get(format!("https://osu.ppy.sh/api/v2/users/{}/{}", user_id, config.mode))
                 .header("Content-Type", "application/json")
                 .header("Authorization", format!("Bearer {}", token))
                 .body(())

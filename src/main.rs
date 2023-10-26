@@ -10,6 +10,7 @@ pub struct Config {
     bind_address: String,
     pub client_id: String,
     pub client_secret: String,
+    pub mode: String,
     pub update_interval_minutes: u64,
     pub user_ids: Vec<String>,
 }
