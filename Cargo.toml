@@ -13,6 +13,7 @@ strip = "symbols"
 
 [dependencies]
 isahc = "1.7.2"
+openssl = { version = "0.10.57", features = ["vendored"] }
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = "1.0.68"
-tiny_http = "0.9.0"
+tiny_http = "0.12.0"
