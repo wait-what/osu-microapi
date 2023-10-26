@@ -1,0 +1,11 @@
+{
+    "bind_address": "0.0.0.0:6969",
+    "client_id": "12345",
+    "client_secret": "asdfhjksadlhfkldcnkljdsfhgjkldsfhgsjkdlfg",
+    "update_interval_minutes": 180,
+    "mode": "osu",
+    "user_ids": [
+        "10040223",
+        "7562902"
+    ]
+}
