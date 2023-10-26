@@ -18,7 +18,7 @@ Useful if you want to have an embed with your osu stats on your website. An exam
 {
     "bind_address": "0.0.0.0:6969",
     "client_id": "12345",
-    "client_secret": "J3a9JCNrzYiMTdkYarEP7LKSJDJVRRf3YarEP7LKSJDJVRRf",
+    "client_secret": "asdfhjksadlhfkldcnkljdsfhgjkldsfhgsjkdlfg",
     "update_interval_minutes": 180,
     "mode": "osu",
     "user_ids": [
@@ -34,6 +34,11 @@ Useful if you want to have an embed with your osu stats on your website. An exam
 ## API reference
 - GET `/` - comma separated list of user IDs
 - GET `/user/<id>` - JSON object with user info
+
+## Manual build
+- Install Rust
+- Clone the repo
+- Run `cargo build --release`
 
 ## License
 This project is licensed under the [MIT license](./LICENSE)

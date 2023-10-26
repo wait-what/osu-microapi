@@ -1,0 +1,129 @@
+name: Build and release
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        target:
+          - name: x86_64-windows
+            triple: x86_64-pc-windows-msvc
+            extension: .exe
+            runner: windows-latest
+
+          - name: x86_64-linux-musl
+            triple: x86_64-unknown-linux-musl
+            extension: ""
+            runner: ubuntu-latest
+
+    runs-on: ${{ matrix.target.runner }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo
+          key: ${{ matrix.target.triple }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ matrix.target.triple }}-cargo-
+
+      - name: Cache build artifacts
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ matrix.target.triple }}-target-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ matrix.target.triple }}-target-
+
+      - name: Install musl build dependencies
+        if: matrix.target.name == 'x86_64-linux-musl'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      - name: Install musl target
+        if: matrix.target.name == 'x86_64-linux-musl'
+        run: rustup target add ${{ matrix.target.triple }}
+
+      - name: Build binary
+        run: cargo build --profile ci --target ${{ matrix.target.triple }}
+
+      - name: Install cargo-get
+        uses: baptiste0928/cargo-install@v2
+        with:
+          crate: cargo-get
+
+      - name: Get version
+        id: get_version
+        shell: bash
+        run: echo "version=$(cargo get version)" >> "$GITHUB_OUTPUT"
+
+      - name: Copy binary
+        shell: bash
+        run: |
+          cp target/${{ matrix.target.triple }}/ci/osu-microapi${{ matrix.target.extension }} \
+            osu-microapi-v${{ steps.get_version.outputs.version }}-${{ matrix.target.name }}${{ matrix.target.extension }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.target.name }}
+          path: osu-microapi-v${{ steps.get_version.outputs.version }}-${{ matrix.target.name }}${{ matrix.target.extension }}
+
+  publish-draft-release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    # Only run this job on manual trigger
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download built binaries
+        uses: actions/download-artifact@v3
+        with:
+          path: binaries
+
+      - name: Install latest upx
+        uses: crazy-max/ghaction-upx@v2
+        with:
+          install-only: true
+
+      - name: Install cargo-get
+        uses: baptiste0928/cargo-install@v2
+        with:
+          crate: cargo-get
+
+      - name: Get version
+        id: get_version
+        run: echo "version=$(cargo get version)" >> "$GITHUB_OUTPUT"
+
+      - name: Pack binaries
+        run: |
+          mkdir -p release
+
+          for target in x86_64-linux-musl x86_64-windows; do
+            mv binaries/$target/osu-microapi-v*-$target* .
+
+            file=osu-microapi-v*-$target*
+            chmod +x $file
+            upx --best $file
+
+            zip osu-microapi-v${{ steps.get_version.outputs.version }}-$target.zip $file README.md LICENSE config.example.json
+          done
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: "*.zip"
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: osu-microapi v${{ steps.get_version.outputs.version }}
+          draft: true
